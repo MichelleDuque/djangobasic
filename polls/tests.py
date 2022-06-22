@@ -2,14 +2,17 @@ import datetime
 
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
 
 from .models import Question
+
+
 
 # py manage.py test polls
 
 
 #Models
-class QuestionModelTest(TestCase):
+class QuestionModelTests(TestCase):
 
     def test_was_published_recently_with_future_questions(self):
         """was_published_recently returns false for questions whose pub_date is in the future""" 
@@ -37,3 +40,19 @@ class QuestionModelTest(TestCase):
         self.assertIs(present_question.was_published_recently(), True)
 
 #vistas
+
+class QuestionIndexViewTests(TestCase):
+
+    def test_no_questions(self):
+        """ If no question exits, an appropiate message is displayed"""
+        response = self.client.get(reverse("polls:index"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No Polls are avariable.")
+        self.assertQuerysetEqual(response.context["latest_question_list"], [])
+
+    def test_no_questions_in_the_future(self):
+        """Question created in the future has not been included in latest_question_list"""
+        time = timezone.now() + datetime.timedelta(days=30)
+        future_question_test = Question(question_text="¿Cúal fue el mejor jugador de LFC este año?",pub_date=time).save()
+        response = self.client.get(reverse("polls:index"))
+        self.assertNotContains(response, future_question_test)
